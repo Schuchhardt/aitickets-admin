@@ -9,7 +9,7 @@ export async function loadFonts() {
 
   webFontLoader.load({
     google: {
-      families: ['Poppins:100,200,300,400,500,600,700&display=swap'],
+      families: ['Prompt:100,200,300,400,500,600,700&display=swap'],
     },
   })
 }

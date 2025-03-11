@@ -4,7 +4,7 @@ import type { LoginResponse } from '@/@fake-db/types'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import axios,{ AxiosError } from 'axios'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
-import { default as authV2MaskDark, default as authV2MaskLight } from '@images/pages/CrowdPeople.png'
+import { default as authV2MaskDark, default as authV2MaskLight } from '@images/pages/bg.png'
 import avatar1 from '@images/avatars/avatar-1.png'
 import type { UserAbility } from '@/plugins/casl/AppAbility';
 import { requiredValidator } from '@validators'
@@ -182,7 +182,7 @@ const onSubmit = () => {
           </VRow>
           <VCardText>
             <h5 class="text-h5 mb-1 text-center">
-              Bienvenido! 👋🏻
+              👋🏻
             </h5>
             <p class="mb-0 text-center">
               Para empezar inicia sesión en tu cuenta.
@@ -254,6 +254,11 @@ const onSubmit = () => {
 
 <style lang="scss">
 @use "@core/scss/template/pages/page-auth.scss";
+
+.text-h5{
+  font-family: 'Unbounded', sans-serif !important;
+  font-weight: 600;
+}
 
 </style>
 
