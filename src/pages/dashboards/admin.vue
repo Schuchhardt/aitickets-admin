@@ -9,7 +9,7 @@ const userToken = localStorage.getItem('accessToken') as string
 
 <template>
   <VRow class="match-height">
-    <iframe :src="userDefaultApp + '?token=' + userToken"></iframe>
+    <iframe allow="camera" :src="userDefaultApp + '?token=' + userToken"></iframe>
   </VRow>
 </template>
 
