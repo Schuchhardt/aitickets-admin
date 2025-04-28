@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { VForm } from 'vuetify/components/VForm'
-import type { LoginResponse } from '@/@fake-db/types'
-import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import axios, { AxiosError } from 'axios'
-import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
-import { default as authV2MaskDark, default as authV2MaskLight } from '@images/pages/bg.png'
-import avatar1 from '@images/avatars/avatar-1.png'
+import { VForm } from 'vuetify/components/VForm'
+import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import type { UserAbility } from '@/plugins/casl/AppAbility'
+import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import { requiredValidator } from '@validators'
+import { default as authV2MaskDark, default as authV2MaskLight } from '@images/pages/bg.png'
 
 console.log("🧹 localStorage LIMPIO")
 
@@ -69,7 +67,7 @@ const login = async () => {
     isLoading.value = true
     showErrors.value = false
 
-    const response = await axios.post<LoginResponse>(
+    const response = await axios.post<any>(
       `${process.env.API_URL}/login`,
       { email: email.value, password: password.value }
     )
