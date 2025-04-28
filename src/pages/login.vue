@@ -2,149 +2,142 @@
 import { VForm } from 'vuetify/components/VForm'
 import type { LoginResponse } from '@/@fake-db/types'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
-import axios,{ AxiosError } from 'axios'
+import axios, { AxiosError } from 'axios'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import { default as authV2MaskDark, default as authV2MaskLight } from '@images/pages/bg.png'
 import avatar1 from '@images/avatars/avatar-1.png'
-import type { UserAbility } from '@/plugins/casl/AppAbility';
+import type { UserAbility } from '@/plugins/casl/AppAbility'
 import { requiredValidator } from '@validators'
 
-const isPasswordVisible = ref(false)
+console.log("🧹 localStorage LIMPIO")
 
+const isPasswordVisible = ref(false)
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
 
 const route = useRoute()
 const router = useRouter()
-
 const ability = useAppAbility()
 
+if (route.query.logout === '1') {
+  console.log("👋 Logout detectado. Limpiando sesión...")
+  localStorage.removeItem('userData')
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('userAbilities')
+  ability.update([])
+  router.replace('/login')
+}
+
 const errorMessages = {
-  'USER_NOT_FOUND': 'Usuario no encontrado.',
-  'PASSWORD_NOT_MATCH': 'Contraseña incorrecta.',
-  'USER_NO_MODULES': 'Usuario no tiene acceso a ningún módulo.',
-  'DEFAULT': 'Los datos ingresados son incorrectos.'
+  USER_NOT_FOUND: 'Usuario no encontrado.',
+  PASSWORD_NOT_MATCH: 'Contraseña incorrecta.',
+  USER_NO_MODULES: 'Usuario no tiene acceso a ningún módulo.',
+  DEFAULT: 'Los datos ingresados son incorrectos.'
 } as const
 
 interface ErrorResponse {
-  code: "USER_NOT_FOUND" | "PASSWORD_NOT_MATCH" | "USER_NO_MODULES" | "DEFAULT"
+  code: keyof typeof errorMessages
   message: string
-  // Agrega otros campos que pueda tener tu respuesta de error
 }
-const errorDescription = ref('')
 
+const errorDescription = ref('')
 const refVForm = ref<VForm>()
 const email = ref('')
 const password = ref('')
 const showErrors = ref(false)
 const isLoading = ref(false)
 
-
-// check url param logout=1 to force logout
-if (route.query.logout == '1') {
-  localStorage.removeItem('userData')
-  localStorage.removeItem('accessToken')
-  localStorage.removeItem('userAbilities')
-  ability.update([])
-}
-
-// check on mount if user is already logged in
-if (localStorage.getItem('accessToken')) {
-  // call get user profile api to check if token is valid
-  axios.get<LoginResponse>(process.env.API_URL+'/profile', {
-    headers: {
-      Authorization: 'Bearer ' + localStorage.getItem('accessToken')
-    }
-  }
-  )
-    .then(r => {
-      if (!r.data?.auth) {
-        console.error('Login failed:', r)
-        return
-      }
-      const { auth: accessToken, user: userData } = r.data
-      localStorage.setItem('userData', JSON.stringify({...userData, avatar: avatar1}))
-      localStorage.setItem('accessToken', accessToken) 
-      ability.update(JSON.parse(localStorage.getItem('userAbilities') || '[]'))
-      router.replace(route.query.to ? String(route.query.to) : '/dashboards/admin')
-    })
-    .catch(e => {
-      console.error(e)
-    })
-}
-
 const handleLoginError = (error: AxiosError<ErrorResponse>) => {
   showErrors.value = true
   isLoading.value = false
-
-  // Verifica si el error tiene una respuesta del servidor
   if (error.response?.data?.code) {
-    const errorKey = error.response.data.code as keyof typeof errorMessages
+    const errorKey = error.response.data.code
     errorDescription.value = errorMessages[errorKey] || errorMessages.DEFAULT
   } else {
-    // Manejo de errores de red u otros errores
     errorDescription.value = 'Error de conexión. Por favor, intente nuevamente.'
   }
-
-  console.log('Login error:', error)
+  console.error('Login error:', error)
 }
 
 const login = async () => {
+  console.log("🔐 Entrando a login()...")
+
   const userAbilities: UserAbility[] = [
-      {
-        action: 'manage',
-        subject: 'all',
-      }
+    { action: 'manage', subject: 'all' }
   ]
+
   try {
     isLoading.value = true
     showErrors.value = false
 
     const response = await axios.post<LoginResponse>(
       `${process.env.API_URL}/login`,
-      { 
-        email: email.value, 
-        password: password.value 
-      }
+      { email: email.value, password: password.value }
     )
 
-    // Validación de la respuesta
+    console.log("📦 Respuesta completa del login:", response.data)
+
     if (!response?.data?.auth) {
       throw new Error('Login failed: Invalid response format')
     }
 
     const { auth: accessToken, user: userData, login_iframe_url } = response.data
 
-    // Guardar datos en localStorage
-    localStorage.setItem('userData', JSON.stringify({...userData, avatar: avatar1}))
-    localStorage.setItem('accessToken', accessToken)
-    localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
-    localStorage.setItem('userDefaultApp', login_iframe_url)
-    
-    // Actualizar ability
-    ability.update(userAbilities)
+    console.log("🧾 userData:", userData)
+    console.log("🔍 userType:", userData?.userType)
+    console.log("📧 Email:", userData?.email)
 
-    isLoading.value = false
-    
-    router.replace(route.query.to ? String(route.query.to) : '/dashboards/admin')
-    // Retornar los datos por si se necesitan en el componente
-    return { accessToken, userData }
+
+const role = userData?.role || 'unknown'
+
+if (role === 'ticket_validator') {
+  console.log("Usuario es ticket_validator. Redirigiendo a QR...")
+  window.location.replace(`https://aitickets.cl/qr?token=${accessToken}`)
+  return
+}
+
+if (role === 'admin') {
+  console.log("Usuario admin. Redirigiendo a Eventos...")
+  window.location.replace(`https://aitickets.retool.com/p/my-events/Eventos?token=${accessToken}`)
+  return
+}
+
+if (role === 'ticket_admin') {
+  console.log("Usuario ticket_admin. Redirigiendo a Entradas...")
+  window.location.replace(`https://aitickets.retool.com/p/my-events/Entradas?token=${accessToken}`)
+  return
+}
+
+if (role === 'finance_admin') {
+  console.log("Usuario finance_admin. Redirigiendo a Cobros...")
+  window.location.replace(`https://aitickets.retool.com/p/my-events/Cobros?token=${accessToken}`)
+  return
+}
+
+if (role === 'equipo_admin') {
+  console.log("Usuario equipo_admin. Redirigiendo a Equipo...")
+  window.location.replace(`https://aitickets.retool.com/p/my-events/Equipo?token=${accessToken}`)
+  return
+}
+
+console.log("Rol desconocido. Redirigiendo al dashboard general...")
+window.location.replace(`https://aitickets.retool.com/p/my-events/Eventos?token=${accessToken}`)
+
 
   } catch (error) {
     handleLoginError(error as AxiosError<ErrorResponse>)
-    throw error // Re-lanzar el error para manejo adicional si es necesario
+    throw error
   }
 }
 
-
 const onSubmit = () => {
-
-  refVForm.value?.validate()
-    .then(({ valid: isValid }) => {
-      if (isValid)
-        login()
-    })
+  refVForm.value?.validate().then(({ valid }) => {
+    if (valid) login()
+  })
 }
 </script>
+
+
+
 
 <template>
   <div>
